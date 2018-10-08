@@ -7,6 +7,38 @@
 #include "budprint.h"
 
 extern bud_free_block free_list_heads[NUM_FREE_LIST];
+
+// major functions
+void *bud_malloc(uint32_t rsize)
+{
+    if (rsize <= 0 || rsize > (MAX_BLOCK_SIZE - sizeof(bud_header)))
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+    void *bp;
+    uint32_t r_order = get_order(rsize);
+
+    if ((bp = find_fit(r_order)) == NULL)
+    {
+        // no fit found, ask for more space
+        if ((bp = bud_sbrk()) == (void *)-1)
+        {
+            errno = ENOMEM;
+            return NULL;
+        }
+        // insert new block into max list
+        bud_free_block *max_block = (bud_free_block *)bp;
+        max_block->header.order = ORDER_MAX - 1;
+        insert_free_block(NUM_FREE_LIST - 1, max_block);
+    }
+    place(bp, r_order);
+    bud_header *b_header = (bud_header *)bp;
+    b_header->rsize = rsize;
+    b_header->padded = is_padded(b_header);
+    return (void *)((uintptr_t)bp) + sizeof(bud_header);
+}
+
 void *bud_realloc(void *ptr, uint32_t rsize)
 {
     if (ptr == NULL)
@@ -71,6 +103,7 @@ void bud_free(void *bp)
     coalesce(current_block);
 }
 
+// helpers
 int valid_buddy_block(bud_free_block *current_block, bud_free_block *buddy_block, int current_block_size)
 {
     return is_in_heap((uintptr_t)buddy_block) &&
@@ -172,36 +205,6 @@ int invalid_pointer(bud_header *b_header)
         return 1;
     }
     return 0;
-}
-
-void *bud_malloc(uint32_t rsize)
-{
-    if (rsize <= 0 || rsize > (MAX_BLOCK_SIZE - sizeof(bud_header)))
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-    void *bp;
-    uint32_t r_order = get_order(rsize);
-
-    if ((bp = find_fit(r_order)) == NULL)
-    {
-        // no fit found, ask for more space
-        if ((bp = bud_sbrk()) == (void *)-1)
-        {
-            errno = ENOMEM;
-            return NULL;
-        }
-        // insert new block into max list
-        bud_free_block *max_block = (bud_free_block *)bp;
-        max_block->header.order = ORDER_MAX - 1;
-        insert_free_block(NUM_FREE_LIST - 1, max_block);
-    }
-    place(bp, r_order);
-    bud_header *b_header = (bud_header *)bp;
-    b_header->rsize = rsize;
-    b_header->padded = is_padded(b_header);
-    return (void *)((uintptr_t)bp) + sizeof(bud_header);
 }
 
 void *find_fit(uint32_t r_order)
