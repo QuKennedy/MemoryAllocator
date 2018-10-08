@@ -2,7 +2,7 @@
 
 This is the core logic for a Buddy System memory allocator written in C. Buddy System allocators maintain a data structure of free blocks sized as powers of 2, which are used to provide best fits for allocation requests, as well as immediate coalescing with neighboring, or "buddy" free blocks of the same size class. This implementation utilizes lists to store free blocks, but the more common and efficient data structure would be a binary tree of free blocks for O(logn) searching rather than linear time.
 
-The pros of the Buddy System are efficient allocates and frees, as well little external fragmentation due to uniform block sizes. Reducing external fragmentation however comes with the price of increasing internal fragmentation, as requests are not always powers of 2. 
+The pros of the Buddy System are efficient allocates and frees, as well as little external fragmentation due to uniform block sizes. Reducing external fragmentation however comes with the price of increasing internal fragmentation, as requests are not always powers of 2. 
 
 
 The allocation algorithm is as follows:
