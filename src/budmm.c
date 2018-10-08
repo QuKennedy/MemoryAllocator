@@ -111,10 +111,10 @@ int valid_buddy_block(bud_free_block *current_block, bud_free_block *buddy_block
            (buddy_block->header.order == current_block->header.order);
 }
 
-int is_in_heap(uintptr_t buddy_block)
+int is_in_heap(uintptr_t bp)
 {
-    return (buddy_block < (uintptr_t)bud_heap_end() &&
-            buddy_block >= (uintptr_t)bud_heap_start());
+    return (bp < (uintptr_t)bud_heap_end() &&
+            bp >= (uintptr_t)bud_heap_start());
 }
 
 void merge_blocks(bud_free_block *left_block, bud_free_block *right_block, int left_merge)
