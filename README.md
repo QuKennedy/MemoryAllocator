@@ -1,8 +1,8 @@
 # MemoryAllocator
 
-This is the core logic for a Binary Buddy System memory allocator written in C. Binary Buddy System allocators maintain a data structure of free blocks sized as powers of 2, which are used to provide first fits for allocation requests, as well as immediate coalescing with neighboring, or "buddy" free blocks of the same size class. This implementation utilizes an array of linked lists to store free blocks, but the more efficient data structure would be a binary tree of free blocks for O(logn) searching rather than linear time.
+This is the core logic for a Binary Buddy System memory allocator written in C. Binary Buddy System allocators attempt to find a middle ground between first and best fit allocators in terms of speed and fragmentation. This is done by maintaining a data structure of free blocks sized as powers of 2, allowing for fast allocates as well as providing immediate coalescing with neighboring, or "buddy" free blocks of the same size class. This implementation utilizes an array of doubly linked linked lists with sentinels to store free blocks.
 
-Pros of the Buddy System are efficient allocates and frees, as well as little external fragmentation due to uniform block sizes. Reducing external fragmentation however comes with the price of increasing internal fragmentation, as requests are not always powers of 2, and in the worst case up to almost half of a block's size can be wasted due to being only a few bytes over the threshold of the next smallest block. 
+The Buddy System features the speed of first fit and the reduction of external fragmentation of best fit allocators through quick access to uniformly sized free blocks. Reducing external fragmentation however comes with the price of increasing internal fragmentation, as requests are not always powers of 2, and in the worst case up to almost half of a block's size can be wasted due to being only a few bytes over the threshold of the next smallest block.
 
 
 The allocation algorithm is as follows:
@@ -14,4 +14,4 @@ During the split, the right block is placed into the appropriate free list and t
 The coalesce algorithm is as follows:
 
 A buddy block's address can be determined by taking the xor of the current block's address and its size, which is due to the addresses of a block and its buddy differing only in the bit position of their size class. This does not guarantee that the computed address is a valid buddy block, so the sizes of the block and its potential buddy must match.
-If the buddy block is invalid or currently allocated then return. If not, merge the 2 blocks and repeat the coalesce algorithm with the merged block until an invalid or allocated buddy is located.
+If the buddy block is invalid or currently allocated then return. If not, merge the 2 blocks and repeat the coalesce algorithm with the merged block until either an invalid or allocated buddy is located, or the entire heap has been freed.
