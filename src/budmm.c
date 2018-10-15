@@ -104,11 +104,10 @@ void bud_free(void *bp)
 }
 
 // helpers
-int valid_buddy_block(bud_free_block *current_block, bud_free_block *buddy_block, int current_block_size)
+int valid_buddy_block(bud_free_block *current_block, bud_free_block *buddy_block)
 {
     return is_in_heap((uintptr_t)buddy_block) &&
-           (((uintptr_t)current_block) ^ current_block_size) == ((uintptr_t)buddy_block) &&
-           (buddy_block->header.order == current_block->header.order);
+           buddy_block->header.order == current_block->header.order;
 }
 
 int is_in_heap(uintptr_t bp)
@@ -129,45 +128,32 @@ void merge_blocks(bud_free_block *left_block, bud_free_block *right_block, int l
 
 void coalesce(bud_free_block *current_block)
 {
-    while (1)
-    {
-        int current_block_size = ORDER_TO_BLOCK_SIZE(current_block->header.order);
+    int current_block_size = ORDER_TO_BLOCK_SIZE(current_block->header.order);
+    bud_free_block *buddy_block = (bud_free_block *)(((uintptr_t)current_block) ^ current_block_size);
 
-        // check right block
-        bud_free_block *buddy_block =
-            (bud_free_block *)(((uintptr_t)current_block) + current_block_size);
-        if (valid_buddy_block(current_block, buddy_block, current_block_size))
+    while (valid_buddy_block(current_block, buddy_block))
+    {
+        if (!buddy_block->header.allocated)
         {
-            if (!buddy_block->header.allocated)
+            // if buddy block to the right
+            if (((uintptr_t)current_block) < ((uintptr_t)buddy_block))
             {
                 merge_blocks(current_block, buddy_block, 0);
-                continue;
             }
             else
             {
-                // buddy block currently allocated
-                return;
-            }
-        }
-        // check left block
-        buddy_block =
-            (bud_free_block *)(((uintptr_t)current_block) - current_block_size);
-        if (valid_buddy_block(current_block, buddy_block, current_block_size))
-        {
-            if (!buddy_block->header.allocated)
-            {
+                // buddy block to the left
                 merge_blocks(current_block, buddy_block, 1);
                 current_block = buddy_block;
-                continue;
-            }
-            else
-            {
-                // buddy block currently allocated
-                return;
             }
         }
-        // if neither right nor left are valid buddy blocks
-        return;
+        else
+        {
+            // buddy block currently allocated
+            break;
+        }
+        current_block_size = ORDER_TO_BLOCK_SIZE(current_block->header.order);
+        buddy_block = (bud_free_block *)(((uintptr_t)current_block) ^ current_block_size);
     }
 }
 
